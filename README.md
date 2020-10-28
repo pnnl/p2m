@@ -5,7 +5,7 @@ Map protein identifiers to metabolites
 Create and activate conda environment:
 
 ```bash
-conda create -n p2m python rdkit openbabel pandas
+conda create -n p2m -c rdkit -c openbabel python rdkit openbabel pandas
 conda activate p2m
 ```
 
