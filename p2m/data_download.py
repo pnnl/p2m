@@ -3,6 +3,8 @@ import pandas as pd
 from rdkit import Chem
 import urllib.request
 import tarfile
+import gzip
+import shutil
 from . import utils as u
 
 def download_rhea_data(data_path):
@@ -37,12 +39,12 @@ def download_rhea_data(data_path):
     urllib.request.urlretrieve(chebi_url, chebi_gz)
     
     print("Extracting ChEBI database...")
-    tar_file = tarfile.open(chebi_gz, "r:gz")
-    tar_file.extractall(path=data_path)
-    tar_file.close()
+    sdf_path = os.path.join(data_path, 'ChEBI_complete.sdf')
+    with gzip.open(chebi_gz, 'rb') as chebi_in:
+        with open(sdf_path, 'wb') as chebi_out:
+            shutil.copyfileobj(chebi_in, chebi_out)
     
     print("Generating ChEBI ID to SMILES mapping file...")
-    sdf_path = os.path.join(data_path, 'ChEBI_complete.sdf')
     chebi_out_path = os.path.join(data_path, 'ChEBI_complete_smiles.txt') 
     suppl = Chem.SDMolSupplier(sdf_path)
     all_smiles = [u.get_chebi_info(x) for x in suppl if type(x) == Chem.rdchem.Mol]

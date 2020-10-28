@@ -7,6 +7,8 @@ import os
 import time
 from . import annotation, data_download
 
+RDLogger.DisableLog('rdApp.*')
+
 def main():
     parser = argparse.ArgumentParser(description="Identify metabolites (substrates and products) of proteins "
                                  "from UniProt identifiers or EC numbers. "
@@ -53,7 +55,6 @@ def main():
 
 
     args = parser.parse_args()
-    print(args)
     if 'download_path' in args:
         print("Beginning downloads...")
         data_download.download_rhea_data(args.download_path)
@@ -97,8 +98,6 @@ def run(ids_path,
     paths['data'] = data_path
     paths['chebi'] = os.path.join(data_path, 'ChEBI_complete.sdf')
     paths['chebi_smiles'] = os.path.join(data_path, 'ChEBI_complete_smiles.txt')
-
-    RDLogger.DisableLog('rdApp.*')
     
     with open(ids_path) as f:
         ids = f.read().splitlines()

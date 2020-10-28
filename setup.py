@@ -8,6 +8,7 @@ setup(
       author_email='brykpnl@gmail.com',
       url='https://github.com/brykpnl/p2m',
       packages=find_packages(),
+      install_requires=['libchebipy'],
       entry_points={
           'console_scripts': ['p2m=p2m.main:main']
           },
