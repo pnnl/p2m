@@ -1,5 +1,6 @@
 import re
 import libchebipy
+import numpy as np
 from rdkit import Chem
 from rdkit.Chem import rdChemReactions
 from rdkit.Chem.MolStandardize.rdMolStandardize import (
@@ -13,6 +14,8 @@ import time
 import ssl
 import logging
 import pandas as pd
+
+UNIPROT_REST_URL = "https://rest.uniprot.org/uniprotkb/"
 
 
 def get_master_rhea(rhea_map, ids):
@@ -70,15 +73,28 @@ def chebi_rels(chebi_id, wait=0.1):
     return chebis
 
 
-def get_chebi_smiles(chebi_frame, chebis):
+def get_chebi_smiles(chebi_frame: pd.DataFrame, chebis: list[str]) -> pd.DataFrame:
     """Get SMILES strings from ChEBI data frame."""
     entries = chebi_frame.loc[chebi_frame["ChEBI_ID"].isin(chebis)]
     entries.reset_index(inplace=True, drop=True)
     return entries
 
 
-def external_rhea(rhea_ids, wait=0.1):
-    """Send external requests to the RHEA database for guessed reactions not included in the downloadable database release."""
+def external_rhea(rhea_ids: list[str], wait: float = 0.1) -> list:
+    """Send external requests to RHEA db.
+
+    Parameters
+    ----------
+    rhea_ids : list[str]
+        List of RHEA reaction identifiers to be queried
+    wait : float, optional
+        Wait time between requests in seconds, by default 0.1
+
+    Returns
+    -------
+    list
+        List of
+    """
     rxns = list()
     for rhea in rhea_ids:
         try:
@@ -120,35 +136,47 @@ def get_chebi_names(chebi_path, smiles_df):
     return full_df
 
 
-def query_external_uniprot(uids, num_reqs=3):
-    """Externally query the UniProt database for Rhea reaction ids."""
-    queries = " ".join(uids)
-    params = {
-        "from": "ACC+ID",
-        "to": "ACC",
-        "format": "tab",
-        "columns": "rhea-id",
-        "query": queries,
-    }
-    url = "https://www.uniprot.org/uploadlists/"
-    data = urllib.parse.urlencode(params)
-    data = data.encode("utf-8")
-    req = urllib.request.Request(url, data)
-    req.add_header("Content_Type", "form-data")
-    i = 0
-    while i < num_reqs:
-        try:
-            with urllib.request.urlopen(req) as f:
-                response = f.read()
-            break
-        except Exception:
-            logging.info("Failed UniProt request {}. Repeating...".format(i))
-            i += 1
-    rd = response.decode("utf-8")
-    selector = r"RHEA:([0-9]*)"
-    rhea_selector = re.compile(selector)
-    rxn_ids = re.findall(rhea_selector, rd)
-    return rxn_ids
+def query_external_uniprot(
+    uids: list[str], n_reqs: int = 3, ext: str = "txt"
+) -> dict[str, list]:
+    """Query the UniProt database for Rhea reaction ids via REST.
+
+    Parameters
+    ----------
+    uids : list[str]
+        List of UniProt IDs
+    n_reqs : int, optional
+        Maximum requests to server, by default 3
+    ext : str, optional
+        Page extension for REST, by default "txt"
+        (Options: "txt", "rdf")
+
+    Returns
+    -------
+    dict[str, list]
+        Mapping of UniProt ID to list of Rhea reaction IDs
+    """
+    url = UNIPROT_REST_URL
+
+    mapping = {}
+    for uid in uids:
+        i = 0
+
+        req = urllib.request.Request(url + f"{uid}.{ext}")
+        while i < n_reqs:
+            try:
+                with urllib.request.urlopen(req) as f:
+                    response = f.read()
+                break
+            except Exception:
+                logging.info("Failed UniProt request {}. Repeating...".format(i))
+                i += 1
+        rd = response.decode("utf-8")
+        selector = r"RHEA:([0-9]*)"
+        rhea_selector = re.compile(selector)
+        rxn_ids = re.findall(rhea_selector, rd)
+        mapping[uid] = rxn_ids
+    return np.unique(np.hstack(list(mapping.values())))
 
 
 def standardize_smiles(smiles, te, uc):
@@ -181,7 +209,7 @@ def clean_smiles_df(df):
     handle = pybel.ob.OBMessageHandler()
     handle.SetOutputLevel(0)
     dfc = df.copy()
-    dfc["Cleaned_SMILES"] = dfc["SMILES"].apply(
+    dfc["cleaned_smiles"] = dfc["smiles"].apply(
         standardize_smiles, args=(TautomerEnumerator(), Uncharger())
     )
     return dfc
@@ -193,4 +221,3 @@ def get_chebi_info(mol):
     chebi_name = mol.GetProp("ChEBI Name")
     smiles = Chem.MolToSmiles(mol)
     return [chebi_id, chebi_name, smiles]
-
