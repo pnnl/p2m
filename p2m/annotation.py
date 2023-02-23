@@ -58,6 +58,23 @@ class Annotation:
         self.smiles_stars = self.smiles[self.smiles.smiles.str.contains("\*")]
         self.smiles_nostars = self.smiles[~self.smiles.smiles.str.contains("\*")]
 
+    def star_to_smiles(self):
+        """Externally query ChEBI database for related compounds"""
+        related_chebis = [
+            utils.chebi_rels(chebi)
+            for chebi in self.smiles_stars["chebiId"]
+            if "CHEBI" in chebi
+        ]
+        flattened_related = list(
+            set(["CHEBI:" + str(i) for s in related_chebis for i in s])
+        )
+        matched_chebis = query.chebis2smilesdf(flattened_related)
+        all_smiles = matched_chebis[matched_chebis["smiles"].notna()]
+        nostars = pd.concat(
+            [self.smiles_nostars, all_smiles[~all_smiles.smiles.str.contains("\*")]]
+        )
+        self.all_nostars = nostars.drop_duplicates(subset="chebiId", ignore_index=True)
+
     def clean_smiles(self):
         """
         Pass all SMILES strings in the dataframe through standardization steps

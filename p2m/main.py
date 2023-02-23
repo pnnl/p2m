@@ -66,6 +66,12 @@ def run(
     logging.info("Mapping protein identifiers to Rhea identifiers...")
     annot.query_ids(ids, id_type)
 
+    if get_related_chebis:
+        logging.info(
+            "Querying ChEBI externally for unspecified R-group containing compounds..."
+        )
+        annot.star_to_smiles()
+
     if clean_smiles:
         logging.info("Standardizing SMILES strings...")
         annot.clean_smiles()
@@ -100,6 +106,8 @@ def main():
 
     parser.add_argument(
         "--ids_path",
+        "--input",
+        "-i",
         type=str,
         help="Path to UniProt or EC identifiers; file must be a list of identifiers separated by newlines.",
         dest="ids_path",
@@ -107,6 +115,8 @@ def main():
     )
     parser.add_argument(
         "--ids_type",
+        "--type",
+        "-t",
         type=str.lower,
         help="Type of identifiers. One of: UniProt, EC",
         dest="ids_type",
@@ -114,6 +124,8 @@ def main():
     )
     parser.add_argument(
         "--output_path",
+        "--output",
+        "-o",
         type=str,
         help="Path to desired output folder.",
         dest="output_path",
@@ -121,12 +133,14 @@ def main():
     )
     parser.add_argument(
         "--complete_rgroups",
+        "-r",
         action="store_true",
         help="Externally query the ChEBI database for substructure searches of compounds with R-groups. Default False.",
         dest="complete_rgroups",
     )
     parser.add_argument(
         "--clean_smiles",
+        "-c",
         action="store_true",
         help="Pass SMILES through a set of standardizations. Default False.",
         dest="clean_smiles",
