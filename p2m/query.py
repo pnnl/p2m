@@ -6,6 +6,9 @@ author(s): @christinehc
 # Imports
 # -------------------------------------------------------------------
 
+from http.client import IncompleteRead
+from typing import Optional
+
 import pandas as pd
 from SPARQLWrapper import JSON, SPARQLWrapper
 from SPARQLWrapper import sparql_dataframe as spdf
@@ -20,10 +23,6 @@ RHEA = "https://sparql.rhea-db.org/sparql"
 # -------------------------------------------------------------------
 # Functions
 # -------------------------------------------------------------------
-
-
-def rhea_url_to_id(url: str) -> str:
-    return url.split("/")[-1]
 
 
 def clean_query(query: str) -> str:
@@ -215,4 +214,52 @@ def id2smiles(
         query = rhea_query(identifier).encode("utf-8")
     else:
         raise ValueError("Parameter `id_type` must be 'uniprot', 'ec', or 'rhea'.")
-    return spdf.get_sparql_dataframe(endpoint, query)
+    df = spdf.get_sparql_dataframe(endpoint, query)
+    df["chebiId"] = [c.replace("CHEBI_", "CHEBI:") for c in df["chebiId"]]
+    return df
+
+
+def chebi2property(chebi: str, prop: str = "SMILES") -> Optional[str]:
+    """Search ChEBI for property by ChEBI ID.
+
+    Parameters
+    ----------
+    chebi : str
+        ChEBI identifier
+    prop : str, optional
+        Name of property, by default "SMILES"
+
+    Returns
+    -------
+    Optional[str]
+        Value of queried property; returns None if none found
+    """
+    if "CHEBI" not in chebi:
+        chebi = f"CHEBI:{chebi}"
+    url = f"https://www.ebi.ac.uk/chebi/searchId.do?chebiId={chebi}"
+    tabs = list()
+    try:
+        tabs = [t for t in pd.read_html(url) if prop in t.values]
+    except IncompleteRead:
+        pass
+    if len(tabs) > 0:
+        return tabs[0].values[0][1]
+    return
+
+
+def chebis2smilesdf(chebis: list[str]) -> pd.DataFrame:
+    """Populate dataframe with compound info given ChEBI IDs.
+
+    Parameters
+    ----------
+    chebis : list[str]
+        List of ChEBI IDs
+
+    Returns
+    -------
+    pd.DataFrame
+        Dataframe containing ChEBIs, names, and SMILES
+    """
+    smiles = [chebi2property(c, "SMILES") for c in chebis]
+    names = [chebi2property(c, "ChEBI Name") for c in chebis]
+    return pd.DataFrame({"chebiId": chebis, "name": names, "smiles": smiles})
