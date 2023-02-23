@@ -2,4 +2,5 @@ libchebipy
 rdkit
 openbabel
 pandas
+lxml
 sparqlwrapper
