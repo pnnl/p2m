@@ -12,7 +12,7 @@ conda activate p2m
 Clone and setup p2m:
 
 ```bash
-git clone https://github.com/brykpnl/p2m
+git clone https://github.com/pnnl/p2m
 cd p2m
 python setup.py install
 ```
