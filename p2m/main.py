@@ -42,6 +42,7 @@ def run(
     output_path: str,
     get_related_chebis: bool = False,
     clean_smiles: bool = False,
+    sleep: float = 30.0,
 ):
     """Run p2m to map identifiers to SMILES strings.
 
@@ -57,6 +58,8 @@ def run(
         _description_, by default False
     clean_smiles : bool, optional
         If True, cleans SMILES via RDKit, by default False
+    sleep : float, optional
+        Wait time (s) between query requests, by default 30.0
     """
     with open(ids_path) as f:
         ids = f.read().splitlines()
@@ -64,7 +67,7 @@ def run(
     annot = annotation.Annotation()
 
     logging.info("Mapping protein identifiers to Rhea identifiers...")
-    annot.query_ids(ids, id_type)
+    annot.query_ids(ids, id_type, sleep_time=sleep)
 
     if get_related_chebis:
         logging.info(
@@ -145,6 +148,15 @@ def main():
         help="Pass SMILES through a set of standardizations. Default False.",
         dest="clean_smiles",
     )
+    parser.add_argument(
+        "--sleep",
+        "-s",
+        type=float,
+        action="store_const",
+        default=30.0,
+        help="Sleep time in seconds between query calls (to prevent timeouts).",
+        dest="sleep",
+    )
 
     args = parser.parse_args()
 
@@ -159,6 +171,7 @@ def main():
         output_path=args.output_path,
         get_related_chebis=args.complete_rgroups,
         clean_smiles=args.clean_smiles,
+        sleep=args.sleep,
     )
     end = time.time()
     logging.info("Run finished.\nTotal time: {}".format(end - start))

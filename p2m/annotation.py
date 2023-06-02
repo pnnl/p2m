@@ -3,9 +3,9 @@
 authors: @brykpnl, @christinehc
 """
 import os
+from time import sleep
 
 import pandas as pd
-
 from . import query, utils
 
 
@@ -19,15 +19,36 @@ class Annotation:
         self.rxns = []
 
     def query_ids(
-        self, ids: list, ids_type: str = "uniprot", external_uniprot: bool = False
+        self,
+        ids: list,
+        ids_type: str = "uniprot",
+        external_uniprot: bool = False,
+        sleep_time: float = 30.0,
     ):
-        """Run SPARQL query for specified IDs."""
+        """Run SPARQL query for specified IDs.
+
+        Parameters
+        ----------
+        ids : list
+            List of UniProt/EC identifiers
+        ids_type : str, optional
+            Identifier type, by default "uniprot"
+            Accepts "uniprot" / "up" for UniProt ID
+                    "enzyme" / "ec" for EC ID
+                    "rhea" / "rh" for RHEA reaction ID
+        external_uniprot : bool, optional
+            If True, applies UniProt REST for IDs missing rxn info,
+                by default False
+        sleep_time : float, optional
+            ait time (s) between query requests, by default 30.0
+        """
         self.ids = ids
         self.ids_type = ids_type
 
         result = list()
         for id_ in ids:
             tmp = query.id2smiles(id_, id_type=ids_type)
+            sleep(sleep_time)
             result.append(tmp)
         result = pd.concat(result, ignore_index=True)
 

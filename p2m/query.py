@@ -178,7 +178,9 @@ def rhea_query(identifier: str) -> str:
 
 
 def id2smiles(
-    identifier: str, endpoint: str = RHEA, id_type: str = "uniprot"
+    identifier: str,
+    endpoint: str = RHEA,
+    id_type: str = "uniprot",
 ) -> pd.DataFrame:
     """Convert database ID to SMILES via SPARQL query.
 
