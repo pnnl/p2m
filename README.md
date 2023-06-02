@@ -2,6 +2,7 @@
 Map protein identifiers to metabolites
 
 ## Installation
+
 Create and activate conda environment:
 
 ```bash
@@ -12,17 +13,7 @@ conda activate p2m
 Clone and setup p2m:
 
 ```bash
-git clone https://github.com/pnnl/p2m
-cd p2m
-python setup.py install
-```
-
-## Download required local data
-
-Modify DOWNLOAD_PATH to the folder you want to store mapping and ChEBI files:
-
-```bash
-p2m download --download_path [DOWNLOAD_PATH]
+pip install git+https://github.com/pnnl/p2m
 ```
 
 ## Run
