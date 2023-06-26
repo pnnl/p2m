@@ -23,7 +23,7 @@ class Annotation:
         ids: list,
         ids_type: str = "uniprot",
         external_uniprot: bool = False,
-        sleep_time: float = 30.0,
+        sleep_time: float = 3.0,
     ):
         """Run SPARQL query for specified IDs.
 
@@ -40,7 +40,7 @@ class Annotation:
             If True, applies UniProt REST for IDs missing rxn info,
                 by default False
         sleep_time : float, optional
-            ait time (s) between query requests, by default 30.0
+            ait time (s) between query requests, by default 3.0
         """
         self.ids = ids
         self.ids_type = ids_type
@@ -51,6 +51,13 @@ class Annotation:
             sleep(sleep_time)
             result.append(tmp)
         result = pd.concat(result, ignore_index=True)
+
+        if result.empty:
+            raise ValueError(
+                "Queried IDs return no results. Check that input"
+                " identifiers are annotated in the Rhea database"
+                " and the correct `--type` flag was indicated."
+            )
 
         self.rhea_ids.extend(
             list(set([i for item in result["rheaIds"].values for i in item.split(",")]))

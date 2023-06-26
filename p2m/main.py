@@ -7,6 +7,7 @@ import logging
 import os
 import sys
 import time
+from typing import Optional
 
 from rdkit import RDLogger
 
@@ -39,10 +40,10 @@ class _HelpAction(argparse._HelpAction):
 def run(
     ids_path: str,
     id_type: str,
-    output_path: str,
+    output_path: Optional[str],
     get_related_chebis: bool = False,
     clean_smiles: bool = False,
-    sleep: float = 30.0,
+    sleep: float = 3.0,
 ):
     """Run p2m to map identifiers to SMILES strings.
 
@@ -59,7 +60,7 @@ def run(
     clean_smiles : bool, optional
         If True, cleans SMILES via RDKit, by default False
     sleep : float, optional
-        Wait time (s) between query requests, by default 30.0
+        Wait time (s) between query requests, by default 3.0
     """
     with open(ids_path) as f:
         ids = f.read().splitlines()
@@ -68,6 +69,10 @@ def run(
 
     logging.info("Mapping protein identifiers to Rhea identifiers...")
     annot.query_ids(ids, id_type, sleep_time=sleep)
+
+    # if no output path is passed, save to input directory
+    if output_path is None:
+        output_path = os.path.dirname(ids_path)
 
     if get_related_chebis:
         logging.info(
@@ -108,7 +113,6 @@ def main():
     )  # add custom help
 
     parser.add_argument(
-        "--ids_path",
         "--input",
         "-i",
         type=str,
@@ -117,7 +121,6 @@ def main():
         required=True,
     )
     parser.add_argument(
-        "--ids_type",
         "--type",
         "-t",
         type=str.lower,
@@ -126,13 +129,12 @@ def main():
         required=True,
     )
     parser.add_argument(
-        "--output_path",
         "--output",
         "-o",
         type=str,
         help="Path to desired output folder.",
         dest="output_path",
-        required=True,
+        # required=True,
     )
     parser.add_argument(
         "--complete_rgroups",
@@ -152,9 +154,8 @@ def main():
         "--sleep",
         "-s",
         type=float,
-        action="store_const",
-        default=30.0,
-        help="Sleep time in seconds between query calls (to prevent timeouts).",
+        default=3.0,
+        help="Sleep time in seconds between query calls.",
         dest="sleep",
     )
 
@@ -174,4 +175,4 @@ def main():
         sleep=args.sleep,
     )
     end = time.time()
-    logging.info("Run finished.\nTotal time: {}".format(end - start))
+    logging.info(f"Run finished.\nTotal time: {end - start:.3f} s")
