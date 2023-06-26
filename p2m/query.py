@@ -217,7 +217,8 @@ def id2smiles(
     else:
         raise ValueError("Parameter `id_type` must be 'uniprot', 'ec', or 'rhea'.")
     df = spdf.get_sparql_dataframe(endpoint, query)
-    df["chebiId"] = [c.replace("CHEBI_", "CHEBI:") for c in df["chebiId"]]
+    if not df.empty:
+        df["chebiId"] = [c.replace("CHEBI_", "CHEBI:") for c in df["chebiId"]]
     return df
 
 
