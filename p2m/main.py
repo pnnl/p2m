@@ -72,7 +72,7 @@ def run(
 
     # if no output path is passed, save to input directory
     if output_path is None:
-        output_path = os.path.dirname(ids_path)
+        output_path = os.path.join(os.path.dirname(ids_path), "p2m")
 
     if get_related_chebis:
         logging.info(
