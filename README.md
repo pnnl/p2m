@@ -24,7 +24,7 @@ p2m [OPTIONS]
 
 See --help for more options:
 
-```bash
+```
 $ p2m --help
 usage: p2m [--help] --input IDS_PATH --type IDS_TYPE [--output OUTPUT_PATH]
            [--complete_rgroups] [--clean_smiles] [--sleep SLEEP]
