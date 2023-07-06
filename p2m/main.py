@@ -63,7 +63,7 @@ def run(
         Wait time (s) between query requests, by default 3.0
     """
     with open(ids_path) as f:
-        ids = f.read().splitlines()
+        ids = f.read().rstrip("\n").splitlines()
 
     annot = annotation.Annotation()
 

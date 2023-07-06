@@ -97,11 +97,16 @@ class Annotation:
             set(["CHEBI:" + str(i) for s in related_chebis for i in s])
         )
         matched_chebis = query.chebis2smilesdf(flattened_related)
-        all_smiles = matched_chebis[matched_chebis["smiles"].notna()]
+        expanded_smiles = matched_chebis[matched_chebis["smiles"].notna()]
         nostars = pd.concat(
-            [self.smiles_nostars, all_smiles[~all_smiles.smiles.str.contains("\*")]]
+            [
+                self.smiles_nostars,
+                expanded_smiles[~expanded_smiles.smiles.str.contains("\*")],
+            ]
         )
-        self.all_nostars = nostars.drop_duplicates(subset="chebiId", ignore_index=True)
+        self.expanded_nostars = nostars.drop_duplicates(
+            subset="chebiId", ignore_index=True
+        )
 
     def clean_smiles(self):
         """
@@ -110,33 +115,39 @@ class Annotation:
         SMILES entry in the dataframe.
         """
         self.clean_smiles_nostars = utils.clean_smiles_df(self.smiles_nostars)
-        if hasattr(self, "all_nostars"):
-            self.clean_all_nostars = utils.clean_smiles_df(self.all_nostars)
+        if hasattr(self, "expanded_nostars"):
+            self.clean_expanded_nostars = utils.clean_smiles_df(self.expanded_nostars)
 
     def export_smiles(self, export_path: str):
-        """Export SMILES dataframes with ChEBI identifiers to appropriate locationsin the output folder."""
+        """Export SMILES dataframes with ChEBI identifiers to appropriate locations
+        in the output folder."""
+        if not os.path.exists(os.path.join(export_path, "partial")):
+            os.makedirs(os.path.join(export_path, "partial"))
+
         self.smiles_stars.to_csv(
-            os.path.join(export_path, "smiles_stars.tsv"), index=False, sep="\t"
+            os.path.join(export_path, "partial", "smiles_partial.tsv"),
+            index=False,
+            sep="\t",
         )
         if hasattr(self, "clean_smiles_nostars"):
             self.clean_smiles_nostars.to_csv(
-                os.path.join(export_path, "clean_smiles_nostars.tsv"),
+                os.path.join(export_path, "smiles_cleaned.tsv"),
                 index=False,
                 sep="\t",
             )
-            if hasattr(self, "clean_all_nostars"):
-                self.clean_all_nostars.to_csv(
-                    os.path.join(export_path, "clean_all_nostars.tsv"),
+            if hasattr(self, "clean_expanded_nostars"):
+                self.clean_expanded_nostars.to_csv(
+                    os.path.join(export_path, "smiles_expanded_cleaned.tsv"),
                     index=False,
                     sep="\t",
                 )
         else:
             self.smiles_nostars.to_csv(
-                os.path.join(export_path, "smiles_nostars.tsv"), index=False, sep="\t"
+                os.path.join(export_path, "smiles.tsv"), index=False, sep="\t"
             )
-            if hasattr(self, "all_nostars"):
-                self.all_nostars.to_csv(
-                    os.path.join(export_path, "smiles_all_nostars.tsv"),
+            if hasattr(self, "expanded_nostars"):
+                self.expanded_nostars.to_csv(
+                    os.path.join(export_path, "smiles_expanded.tsv"),
                     index=False,
                     sep="\t",
                 )
