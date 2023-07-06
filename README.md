@@ -62,6 +62,11 @@ options:
                         Sleep time in seconds between query calls.
 ```
 
+## Additional Resources
+
+1. [Example](resources/example_run.zip): Includes input, output, and command line logs for an example P2M run.
+2. [Substructure expansion](resources/substructure_expansion.ipynb): Partial SMILES/SMARTS can be expanded using included utilities in P2M. See the linked notebook for details.
+
 ## Authors
 
 * Bryan Killinger (@brykpnl)
