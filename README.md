@@ -1,5 +1,8 @@
-# p2m
-Map protein identifiers to metabolites
+# P2M: Map protein identifiers to metabolites
+
+<p align="center">
+  <img align="center" src="resources/toc_graphic.png">
+</p>
 
 ## Installation
 
@@ -19,10 +22,17 @@ pip install git+https://github.com/pnnl/p2m
 ## Run
 
 ```bash
-p2m [OPTIONS]
+p2m --input IDS_PATH --type IDS_TYPE [OPTIONS]
 ```
 
-See --help for more options:
+For instance, in the [included example](resources/example_run.zip), the following command was used
+to query UniProt identifiers with R-group completion and SMILES cleaning:
+
+```bash
+p2m --input example_run/ecoli_k12_mg1655_uniprotkb.txt --type uniprot -rc
+```
+
+See `--help` for more details:
 
 ```
 $ p2m --help
@@ -52,4 +62,13 @@ options:
                         Sleep time in seconds between query calls.
 ```
 
+## Authors
 
+* Bryan Killinger (@brykpnl)
+* Christine Chang (@christinehc)
+* Ryan Renslow
+* Sean Colby (@smcolby)
+
+## License
+
+P2M is licensed under the BSD 3-Clause License; see the [LICENSE](LICENSE) for details.
