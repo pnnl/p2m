@@ -177,6 +177,44 @@ def rhea_query(identifier: str) -> str:
     return clean_query(query)
 
 
+def substructure_query(smiles: str) -> str:
+    """Write query for substructure retrieval.
+
+    Parameters
+    ----------
+    smiles : str
+        SMILES string
+
+    Returns
+    -------
+    str
+        Query for Rhea SPARQL endpoint
+    """
+    #
+    query = """
+    PREFIX chebi: <http://purl.obolibrary.org/obo/chebi/>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    PREFIX sachem: <http://bioinfo.uochb.cas.cz/rdf/v1.0/sachem#>
+    PREFIX idsm: <https://idsm.elixir-czech.cz/sparql/endpoint/>
+
+    SELECT DISTINCT ?chebiId ?name ?smiles
+    WHERE
+    {{
+      SERVICE idsm:chebi {{
+      ?chebi sachem:substructureSearch
+      [ sachem:query "{}" ]
+      BIND(strafter(str(?chebi),"http://purl.obolibrary.org/obo/") as ?chebiId)
+    }}
+    ?chebi chebi:smiles ?smiles .
+    ?chebi rdfs:label ?name . 
+    }}
+    GROUP BY ?chebiId ?name ?smiles
+    """.format(
+        smiles
+    )
+    return clean_query(query)
+
+
 def id2smiles(
     identifier: str,
     endpoint: str = RHEA,
@@ -266,3 +304,24 @@ def chebis2smilesdf(chebis: list[str]) -> pd.DataFrame:
     smiles = [chebi2property(c, "SMILES") for c in chebis]
     names = [chebi2property(c, "ChEBI Name") for c in chebis]
     return pd.DataFrame({"chebiId": chebis, "name": names, "smiles": smiles})
+
+
+def substruct2struct(smiles: str, endpoint: str = RHEA) -> pd.DataFrame:
+    """Perform substructure search using SMARTS query.
+
+    Parameters
+    ----------
+    smiles : str
+        SMILES string
+    endpoint : str, optional
+        SPARQL endpoint, by default RHEA
+
+    Returns
+    -------
+    pd.DataFrame
+        Dataframe containing ChEBIs, names, and SMILES
+    """
+    query = substructure_query(smiles)
+    df = spdf.get_sparql_dataframe(endpoint, query)
+    df["chebiId"] = [c.replace("CHEBI_", "CHEBI:") for c in df["chebiId"]]
+    return df
