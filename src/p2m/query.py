@@ -10,7 +10,6 @@ from http.client import IncompleteRead
 from typing import Optional
 
 import pandas as pd
-from SPARQLWrapper import JSON, SPARQLWrapper
 from SPARQLWrapper import sparql_dataframe as spdf
 
 # -------------------------------------------------------------------
@@ -19,6 +18,8 @@ from SPARQLWrapper import sparql_dataframe as spdf
 
 UNIPROT = "https://sparql.uniprot.org/sparql/"
 RHEA = "https://sparql.rhea-db.org/sparql"
+LIPIDMAPS = "https://lipidmaps.org/sparql"
+SWISSLIPIDS = "https://sparql.swisslipids.org/sparql/"
 
 # -------------------------------------------------------------------
 # Functions
@@ -160,7 +161,7 @@ def rhea_query(identifier: str) -> str:
     SELECT DISTINCT ?chebiId ?name ?smiles (group_concat(?rheaId; separator=',') as ?rheaIds)
     WHERE
     {{
-      VALUES (?rhea){ { (rh:{}) }}
+      VALUES (?rhea){{ (rh:{}) }}
       ?rhea rh:accession ?accession .
       ?rhea rh:equation ?equation .
       ?rhea rh:side/rh:contains/rh:compound ?compound .
@@ -211,6 +212,27 @@ def substructure_query(smiles: str) -> str:
     GROUP BY ?chebiId ?name ?smiles
     """.format(
         smiles
+    )
+    return clean_query(query)
+
+
+def swisslipids_query(identifier: str) -> str:
+    query = """
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    PREFIX owl: <http://www.w3.org/2002/07/owl#>
+    PREFIX CHEBI: <http://purl.obolibrary.org/obo/CHEBI_>
+
+    SELECT DISTINCT ?chebiId ?slId ?slmName 
+    WHERE {{
+      VALUES ?chebi {{ {} }}
+      ?slm rdfs:label ?slmName . 
+      ?slm owl:equivalentClass ?chebi .
+      BIND(strafter(str(?slm),"https://swisslipids.org/rdf/") as ?slId)
+      BIND(strafter(str(?chebi),"http://purl.obolibrary.org/obo/") as ?chebiId)
+    }}
+    GROUP BY ?chebiId ?slId ?slmName
+    """.format(
+        identifier
     )
     return clean_query(query)
 
@@ -306,7 +328,9 @@ def chebis2smilesdf(chebis: list[str]) -> pd.DataFrame:
     return pd.DataFrame({"chebiId": chebis, "name": names, "smiles": smiles})
 
 
-def substruct2struct(smiles: str, endpoint: str = RHEA) -> pd.DataFrame:
+def substruct2struct(
+    smiles: str, endpoint: str = RHEA, swisslipids: bool = False
+) -> pd.DataFrame:
     """Perform substructure search using SMARTS query.
 
     Parameters
@@ -315,6 +339,9 @@ def substruct2struct(smiles: str, endpoint: str = RHEA) -> pd.DataFrame:
         SMILES string
     endpoint : str, optional
         SPARQL endpoint, by default RHEA
+    swisslipids : bool, optional
+        Whether to validate SwissLipids entry, by default True
+        NOTE: Adds significant time to the process.
 
     Returns
     -------
@@ -324,4 +351,19 @@ def substruct2struct(smiles: str, endpoint: str = RHEA) -> pd.DataFrame:
     query = substructure_query(smiles)
     df = spdf.get_sparql_dataframe(endpoint, query)
     df["chebiId"] = [c.replace("CHEBI_", "CHEBI:") for c in df["chebiId"]]
+
+    if swisslipids:
+        swiss = list()
+        for cid in df["chebiId"]:
+            try:
+                tmp = spdf.get_sparql_dataframe(SWISSLIPIDS, swisslipids_query(cid))
+                swiss.append(tmp)
+            except:
+                pass
+
+        swiss = pd.concat(swiss, ignore_index=True)
+        if len(swiss) > 1:
+            swiss["chebiId"] = [c.replace("CHEBI_", "CHEBI:") for c in swiss["chebiId"]]
+            df = df.merge(swiss, how="left", on="chebiId")
+
     return df
